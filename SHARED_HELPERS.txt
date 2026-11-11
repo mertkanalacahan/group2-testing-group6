@@ -1,0 +1,36 @@
+GROUP 6 SHARED HELPER CONTRACT
+
+Import functions from issue_utils. No third-party dependencies are required.
+
+is_bot(author): bool; case-insensitive [bot] suffix only, not account lookup.
+utc_date(value): parsed datetime -> UTC datetime; naive dates assumed UTC;
+invalid/non-datetime input -> None. Does not parse strings or mutate inputs.
+inspect_closure(issue): (Event, None) for usable final closure, otherwise
+(None, reason). Reasons: missing_closure_event, undated_closure,
+undated_reopen, reopen_at_or_after_closure (checked in that order).
+get_close_event(issue): Event or None.
+get_close_date(issue): UTC datetime or None.
+Closure helpers do not filter issue state or bot authors. Feature 1 does that.
+
+get_first_response(issue): earliest eligible commented Event or None.
+Requires known creator and creation datetime. Excludes missing authors,
+creator comments (case-insensitive), [bot] comments, invalid dates and events
+before creation. Events exactly at creation qualify. Equal timestamps keep
+input order. The original Event is returned; normalize its date with utc_date.
+No bot/creator comments does not mean every other comment is a useful answer.
+None means no eligible observed response. Missing issue metadata should be
+reported separately by the calling analysis rather than silently interpreted
+as a genuine unanswered issue.
+
+Example for Feature 3:
+  response = get_first_response(issue)
+  if response is not None:
+      hours = (utc_date(response.event_date) - utc_date(issue.created_date)).total_seconds() / 3600
+      responder = response.author
+
+For a sensitivity analysis excluding a leading responder, filter that author's
+comments on a separate issue view and call the helper again; do not mutate the
+shared cached Issue object. This helper does not yet take an exclusion argument.
+
+Tests: python -m unittest discover -s tests -p test_issue_utils.py -v
+Coordinate changes to this contract through a team pull request.

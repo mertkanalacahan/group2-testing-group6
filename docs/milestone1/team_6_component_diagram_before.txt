@@ -1,0 +1,21 @@
+flowchart LR
+
+    Run["run.py"]
+
+    subgraph Analyses [Analyses]
+        Example["example_analysis.py"]
+    end
+
+    subgraph Core [Core Utilities]
+        Loader["data_loader.py"]
+        Config["config.py"]
+        Model["model.py"]
+    end
+
+    Run -->|"stores --user, --label via overwrite_from_args()"| Config
+    Run -->|"instantiates ExampleAnalysis and calls run()"| Example
+    Example -->|"reads user via get_parameter()"| Config
+    Example -->|"calls get_issues()"| Loader
+    Example -->|"uses Issue and Event objects"| Model
+    Loader -->|"reads ENPM611_PROJECT_DATA_PATH"| Config
+    Loader -->|"creates Issue objects from JSON"| Model

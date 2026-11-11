@@ -1,0 +1,56 @@
+flowchart LR
+
+    Run["run.py"]
+
+    subgraph Legend [Legend]
+        direction LR
+        LegendExisting["Existing template module"]
+        LegendNew["Planned new module"]
+    end
+
+    subgraph Analyses [Analyses]
+        Example["example_analysis.py"]
+        F1["resolution_time_analysis.py"]
+        F2["contributor_profile_analysis.py"]
+        F3["response_time_analysis.py"]
+    end
+
+    subgraph Core [Core Utilities]
+        Utils["issue_utils.py"]
+        Loader["data_loader.py"]
+        Config["config.py"]
+        Model["model.py"]
+    end
+
+    Run -->|"stores command-line args via overwrite_from_args()"| Config
+    Run -->|"--feature 0: instantiates ExampleAnalysis, calls run()"| Example
+    Run -->|"--feature 1: instantiates ResolutionTimeAnalysis, calls run()"| F1
+    Run -->|"--feature 2: instantiates ContributorProfileAnalysis, calls run()"| F2
+    Run -->|"--feature 3: instantiates ResponseTimeAnalysis, calls run()"| F3
+
+    Example -->|"reads user via get_parameter()"| Config
+    Example -->|"instantiates DataLoader and calls get_issues()"| Loader
+    Example -->|"reads Issue and Event fields"| Model
+
+    F1 -->|"instantiates DataLoader and calls get_issues()"| Loader
+    F1 -->|"calls get_close_date() and is_bot()"| Utils
+    F1 -->|"reads Issue labels and created_date"| Model
+
+    F2 -->|"reads user via get_parameter()"| Config
+    F2 -->|"instantiates DataLoader and calls get_issues()"| Loader
+    F2 -->|"calls is_bot()"| Utils
+    F2 -->|"reads Event type, author and Issue labels"| Model
+
+    F3 -->|"instantiates DataLoader and calls get_issues()"| Loader
+    F3 -->|"calls get_first_response() and is_bot()"| Utils
+    F3 -->|"reads Issue created_date"| Model
+
+    Utils -->|"reads Issue and Event fields"| Model
+    Loader -->|"reads ENPM611_PROJECT_DATA_PATH via get_parameter()"| Config
+    Loader -->|"creates Issue objects from JSON"| Model
+
+    style F1 fill:#d4f4dd,stroke:#2e7d32
+    style F2 fill:#d4f4dd,stroke:#2e7d32
+    style F3 fill:#d4f4dd,stroke:#2e7d32
+    style Utils fill:#d4f4dd,stroke:#2e7d32
+    style LegendNew fill:#d4f4dd,stroke:#2e7d32

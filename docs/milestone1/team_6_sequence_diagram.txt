@@ -1,0 +1,64 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Run as run.py
+    participant Cfg as config.py
+    participant F2 as contributor_profile_analysis.py
+    participant Loader as data_loader.py
+    participant Model as model.py
+    participant Utils as issue_utils.py
+
+    Note over Run,Utils: Planned Feature 2 - Contributor profile
+    User->>Run: python run.py --feature 2 --user abn
+    Run->>Run: parse_args()
+    Run->>Cfg: overwrite_from_args(args)
+    Cfg->>Cfg: Initialize configuration and store supplied arguments
+    Note right of Cfg: feature=2, user=abn<br/>Keep unspecified settings.
+    Run->>F2: ContributorProfileAnalysis()
+    F2->>Cfg: get_parameter('user')
+    Cfg-->>F2: "abn"
+    F2-->>Run: ContributorProfileAnalysis instance
+    Run->>F2: run()
+    F2->>Loader: DataLoader()
+    Loader->>Cfg: get_parameter('ENPM611_PROJECT_DATA_PATH')
+    Cfg-->>Loader: Configured JSON file path
+    Loader-->>F2: DataLoader instance
+    F2->>Loader: get_issues()
+    alt _ISSUES is None
+        Loader->>Loader: _load() - read and decode JSON
+        loop Each issue record
+            Loader->>Model: Issue(record)
+            Model->>Model: Issue.from_json(record)
+            loop Each event in the issue
+                Model->>Model: Event(event_record) and Event.from_json()
+            end
+            Model-->>Loader: Issue containing Event objects
+        end
+        Loader->>Loader: Cache List[Issue] in _ISSUES
+        Loader->>User: Print loaded issue count and data path
+    else Issues already cached
+        Loader->>Loader: Reuse cached _ISSUES
+    end
+    Loader-->>F2: List[Issue]
+
+    F2->>F2: Collect events authored by abn across issues
+    F2->>F2: Count events by contributor across the dataset
+    loop Each distinct contributor
+        F2->>Utils: is_bot(author)
+        Utils-->>F2: Boolean bot classification
+    end
+    F2->>F2: Rank non-bot contributors by event count
+    alt No events found for requested user
+        F2->>User: Print no activity found and suggest top 5 contributors
+    else User has activity
+        F2->>F2: Count user events by type and calculate percentages
+        F2->>F2: Select top 10 non-bot contributors and pool their events
+        F2->>F2: Calculate baseline event-type percentages
+        F2->>F2: Rank current area labels on issues with user activity
+        Note right of F2: Count issues once per label.<br/>Match categories in both bars.<br/>Group other types as Other.
+        F2->>Utils: is_bot(requested_user)
+        Utils-->>F2: false for abn
+        Note right of F2: Allow bot input.<br/>Mark it as automation.<br/>Exclude bots from baseline.
+        F2->>User: Print activity totals, mix, top areas and baseline definition
+        F2->>User: Display stacked percentage bars - user versus baseline
+    end
