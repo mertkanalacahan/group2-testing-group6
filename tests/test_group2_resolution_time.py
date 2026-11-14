@@ -1,4 +1,3 @@
-
 """Independent Team 2 tests for Group 6's Feature 1 (time to closure)."""
 
 import contextlib
@@ -17,7 +16,6 @@ import run
 from model import Issue
 from resolution_time_analysis import ResolutionTimeAnalysis, save_charts
 
-
 def make_issue(state, labels, closure_date=None):
     """Construct a controlled issue with a known creation and closure date."""
     events = []
@@ -33,7 +31,6 @@ def make_issue(state, labels, closure_date=None):
         'labels': labels,
         'events': events,
     })
-
 
 class Group2ResolutionTimeTests(unittest.TestCase):
     def test_run_keeps_json_csv_console_and_charts_consistent(self):
@@ -124,7 +121,6 @@ class Group2ResolutionTimeTests(unittest.TestCase):
             for family in ('area', 'kind'):
                 self.assertTrue((Path(tempdir) / f'closure_by_{family}.png').is_file())
 
-
 class Group2ResolutionCLIIntegrationTests(unittest.TestCase):
     def run_command(self, source, output):
         """Use the real argument parser, config, JSON loader, analysis, and exports."""
@@ -203,7 +199,6 @@ class Group2ResolutionCLIIntegrationTests(unittest.TestCase):
             self.assertIn('Check the dataset path and JSON format.', stderr.getvalue())
             self.assertNotIn('Traceback (most recent call last)', stderr.getvalue())
             self.assertFalse((output / 'summary.json').exists())
-
 
 if __name__ == "__main__":
     unittest.main()
