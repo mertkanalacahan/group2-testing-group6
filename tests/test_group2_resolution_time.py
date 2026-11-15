@@ -177,6 +177,36 @@ class Group2ResolutionCLIIntegrationTests(unittest.TestCase):
             self.assertTrue((output / 'closure_by_kind.png').is_file())
             self.assertTrue((output / 'closure_by_area.svg').is_file())
 
+    def test_numeric_output_directory_name_is_accepted(self):
+        """A valid numeric directory name must remain a path, not become an integer."""
+        import subprocess
+        import sys
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / 'issues.json'
+            source.write_text(json.dumps([{
+                'state': 'closed',
+                'created_date': '2024-01-01T00:00:00Z',
+                'labels': ['kind/bug'],
+                'events': [{
+                    'event_type': 'closed',
+                    'author': 'alice',
+                    'event_date': '2024-01-03T00:00:00Z',
+                }],
+            }]), encoding='utf-8')
+            env = os.environ.copy()
+            env['ENPM611_PROJECT_DATA_PATH'] = str(source)
+            env['MPLBACKEND'] = 'Agg'
+            env.pop('show', None)
+            project_root = Path(__file__).resolve().parents[1]
+            result = subprocess.run(
+                [sys.executable, str(project_root / 'run.py'),
+                 '--feature', '1', '--output-dir', '2024'],
+                cwd=temporary, env=env, capture_output=True, text=True, timeout=60,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((Path(temporary) / '2024' / 'summary.json').is_file())
+
     def test_bad_json_reports_an_error_without_a_traceback(self):
         """A malformed dataset must cause the CLI's documented friendly failure."""
         with tempfile.TemporaryDirectory() as temporary:
