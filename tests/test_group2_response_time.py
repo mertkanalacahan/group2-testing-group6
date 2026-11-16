@@ -164,21 +164,41 @@ class Group2ResponseTimeTests(unittest.TestCase):
             self.assertTrue((Path(tempdir) / 'first_response_by_year.png').is_file())
             self.assertTrue((Path(tempdir) / 'first_response_without_top_responder.png').is_file())
 
-    def test_median_without_top_responder_cannot_be_faster_than_with_them(self):
-        """Dropping the leading responder must not make the reported median improve."""
-        issues = [
+    def test_median_without_top_responder_is_measured_only_on_remaining_replies(self):
+        """The sensitivity median is a median among still-answered issues, like the baseline."""
+        # Every issue keeps a slower second reply, so the population is unchanged.
+        # Removing the first responder can only delay an issue's first reply,
+        # never bring it forward, so here the median must not improve.
+        preserved = [
+            make_issue('2020-01-01T00:00:00Z', comments=[('fast', '2020-01-01T01:00:00Z'),
+                                                         ('slow', '2020-01-01T09:00:00Z')])
+            for _ in range(3)
+        ]
+        row = analyze(preserved)['years'][0]
+        self.assertEqual(row['top_responder'], 'fast')
+        self.assertEqual(row['answered'], 3)
+        self.assertAlmostEqual(row['median_hours'], 1)
+        self.assertAlmostEqual(row['median_hours_without_top'], 9)
+        self.assertGreaterEqual(row['median_hours_without_top'], row['median_hours'])
+
+        # Two issues lose their only reply. Consistent with the documented
+        # method, they leave the median rather than being counted as a long
+        # wait, so the sensitivity figure is taken over the one issue that
+        # keeps a reply and can legitimately fall below the baseline.
+        reduced = [
             make_issue('2020-01-01T00:00:00Z', comments=[('bob', '2020-01-05T04:00:00Z')]),
             make_issue('2020-01-01T00:00:00Z', comments=[('bob', '2020-01-05T04:00:00Z')]),
             make_issue('2020-01-01T00:00:00Z', comments=[('alice', '2020-01-01T01:00:00Z'),
                                                          ('bob', '2020-01-01T02:00:00Z')]),
         ]
-        row = analyze(issues)['years'][0]
+        row = analyze(reduced)['years'][0]
         self.assertEqual(row['top_responder'], 'bob')
         self.assertAlmostEqual(row['median_hours'], 100)
-        self.assertGreaterEqual(
-            row['median_hours_without_top'], row['median_hours'],
-            'the two issues that lose their only reply were dropped from the '
-            'sensitivity median instead of being counted as unanswered')
+        self.assertAlmostEqual(row['median_hours_without_top'], 1)
+        # The two figures therefore have different denominators: the year still
+        # reports three answered issues and no unanswered ones.
+        self.assertEqual(row['answered'], 3)
+        self.assertEqual(row['unanswered'], 0)
 
 class Group2ResponseTimeCLIIntegrationTests(unittest.TestCase):
     def run_command(self, source, output):
@@ -232,8 +252,8 @@ class Group2ResponseTimeCLIIntegrationTests(unittest.TestCase):
             self.assertTrue((output / 'first_response_by_year.png').is_file())
             self.assertTrue((output / 'first_response_without_top_responder.svg').is_file())
 
-    def test_unusable_issue_state_does_not_abort_the_whole_report(self):
-        """One issue with an unrecognised state must not stop a report that ignores state."""
+    def test_unusable_issue_state_stops_loading_with_a_reported_failure(self):
+        """Per the README, an invalid issue state must stop loading and be reported."""
         records = [
             {'state': 'open', 'creator': 'zoe', 'created_date': '2020-01-01T00:00:00Z',
              'labels': [],
@@ -247,14 +267,17 @@ class Group2ResponseTimeCLIIntegrationTests(unittest.TestCase):
             output = Path(temporary) / 'results'
             source.write_text(json.dumps(records), encoding='utf-8')
             stderr = io.StringIO()
-            with contextlib.redirect_stderr(stderr):
-                try:
-                    self.run_command(source, output)
-                    code = 0
-                except SystemExit as exit_request:
-                    code = exit_request.code
-            self.assertEqual(code, 0, f'the analysis exited with {stderr.getvalue().strip()!r}')
-            self.assertTrue((output / 'summary.json').is_file())
+            with (
+                contextlib.redirect_stderr(stderr),
+                self.assertRaises(SystemExit) as exit_context,
+            ):
+                self.run_command(source, output)
+            self.assertEqual(exit_context.exception.code, 1)
+            self.assertIn('Unable to run analysis', stderr.getvalue())
+            self.assertNotIn('Traceback (most recent call last)', stderr.getvalue())
+            self.assertFalse(output.exists(),
+                             'a dataset that failed to load must not leave partial results '
+                             'that look like a completed analysis')
 
     def test_bad_json_reports_an_error_without_a_traceback(self):
         """A malformed dataset must cause the CLI's documented friendly failure."""
