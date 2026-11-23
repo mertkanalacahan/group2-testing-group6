@@ -1,0 +1,27 @@
+......................F................F.........................................................
+======================================================================
+FAIL: test_exponent_like_username_is_looked_up_as_typed (tests.test_group2_contributor_profile.Group2ContributorProfileCLIIntegrationTests.test_exponent_like_username_is_looked_up_as_typed)
+A valid GitHub username such as 1e3 must not be turned into a number.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\vinay\Documents\611m3\group2-testing-group6\tests\test_group2_contributor_profile.py", line 222, in test_exponent_like_username_is_looked_up_as_typed
+    self.assertNotIn("No activity found for '1000.0'", console)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "No activity found for '1000.0'" unexpectedly found in "Loaded 1 issues from C:\\Users\\vinay\\AppData\\Local\\Temp\\tmp5gsdsb6g\\issues.json.\n\nNo activity found for '1000.0'.\nTry one of the most active contributors: 1e3\n"
+
+======================================================================
+FAIL: test_numeric_output_directory_name_is_accepted (tests.test_group2_resolution_time.Group2ResolutionCLIIntegrationTests.test_numeric_output_directory_name_is_accepted)
+A valid numeric directory name must remain a path, not become an integer.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\vinay\Documents\611m3\group2-testing-group6\tests\test_group2_resolution_time.py", line 207, in test_numeric_output_directory_name_is_accepted
+    self.assertEqual(result.returncode, 0, result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : Unable to run analysis: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'int'
+Check the dataset path and JSON format.
+
+
+----------------------------------------------------------------------
+Ran 97 tests in 12.808s
+
+FAILED (failures=2)

@@ -1,0 +1,13 @@
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+config.py                            68     13    81%
+contributor_profile_analysis.py     221      1    99%
+data_loader.py                       18      1    94%
+example_analysis.py                  28     28     0%
+issue_utils.py                       43      0   100%
+model.py                             63      2    97%
+resolution_time_analysis.py         107      0   100%
+response_time_analysis.py           171      1    99%
+run.py                               35      6    83%
+-----------------------------------------------------
+TOTAL                               754     52    93%
